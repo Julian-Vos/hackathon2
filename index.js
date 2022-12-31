@@ -75,10 +75,10 @@ function onMouseMove(event) { // on marquee update, not just move
     )
 
     for (const fish of fishes) {
-        fish.setMarqueed(fish.displayObject.x - 50 < Math.max(event.x, marquee.x) &&
-                         fish.displayObject.y - 50 < Math.max(event.y, marquee.y) &&
-                         fish.displayObject.x + 50 > Math.min(marquee.x, event.x) &&
-                         fish.displayObject.y + 50 > Math.min(marquee.y, event.y))
+        fish.setMarqueed(Math.max(event.x, marquee.x) > fish.displayObject.x - fish.displayObject.width / 2 &&
+                         Math.max(event.y, marquee.y) > fish.displayObject.y - fish.displayObject.height / 2 &&
+                         Math.min(marquee.x, event.x) < fish.displayObject.x + fish.displayObject.width / 2 &&
+                         Math.min(marquee.y, event.y) < fish.displayObject.y + fish.displayObject.height / 2)
     }
 }
 

@@ -5,6 +5,7 @@ export default class Fish {
         this.displayObject = PIXI.Sprite.from(`images/${image}.png`)
         this.displayObject.position.x = x
         this.displayObject.position.y = y
+        this.displayObject.anchor.set(0.5)
 
         this.marqueed = false
         this.selected = false
