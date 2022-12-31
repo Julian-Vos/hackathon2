@@ -28,4 +28,15 @@ export default class Fish {
     updateTint() {
         // this.displayObject.tint = this.marqueed || this.selected ? 0x0000ff : 0xff0000
     }
+
+    update(delta) {
+        if (this.movement.x === 0 && this.movement.y === 0) return
+
+        const step = this.movement.normalize().multiplyScalar(
+            Math.min(delta * 250, this.movement.magnitude())
+        )
+
+        this.movement.subtract(step, this.movement)
+        this.displayObject.position.add(step, this.displayObject.position)
+    }
 }

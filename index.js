@@ -32,8 +32,10 @@ for (let i = 0; i < 3; i++) {
     fishes.push(fish)
 }
 
-const selectionCenter = new PIXI.Point()
 const marquee = new PIXI.Graphics()
+let mouseX
+let mouseY
+let selectionCount
 
 app.stage.addChild(marquee)
 
@@ -42,7 +44,10 @@ document.body.appendChild(app.view)
 document.addEventListener('mousedown', (event) => {
     switch (event.button) {
         case 0: {
-            marquee.position.set(event.x, event.y)
+            mouseX = event.x
+            mouseY = event.y
+
+            marquee.position.set(mouseX, mouseY)
 
             app.stage.interactiveChildren = false
 
@@ -51,60 +56,63 @@ document.addEventListener('mousedown', (event) => {
             document.addEventListener('keydown', onKeyDown)
         } break
         case 2: {
+            let selectionIndex = 0
+
             for (const fish of fishes) {
-                if (fish.selected) {
-                    fish.movement.set(event.x - selectionCenter.x, event.y - selectionCenter.y)
-                    fish.displayObject.position.add(fish.movement, fish.displayObject.position) // temporary
+                if (!fish.selected) continue
+
+                const angle = 0.5 * Math.PI - 2 * Math.PI / selectionCount * selectionIndex++
+
+                fish.movement.set(
+                    event.x - fish.displayObject.x + Math.cos(angle) * (selectionCount - 1) * 30,
+                    event.y - fish.displayObject.y + Math.sin(angle) * (selectionCount - 1) * 30
+                )
+
+                if (fish.movement.x !== 0) {
+                    fish.displayObject.scale.x = Math.sign(fish.movement.x)
                 }
             }
-
-            selectionCenter.set(event.x, event.y)
         }
     }
 })
 
-function onMouseMove(event) { // on marquee update, not just move
-    if (event.button !== 0) return
+function onMouseMove(event) {
+    mouseX = event.x
+    mouseY = event.y
+}
 
+function updateMarquee() {
     marquee.clear()
     marquee.lineStyle(3).drawRect(
-        Math.min(0, event.x - marquee.x),
-        Math.min(0, event.y - marquee.y),
-        Math.abs(event.x - marquee.x),
-        Math.abs(event.y - marquee.y)
+        Math.min(0, mouseX - marquee.x),
+        Math.min(0, mouseY - marquee.y),
+        Math.abs(mouseX - marquee.x),
+        Math.abs(mouseY - marquee.y)
     )
 
     for (const fish of fishes) {
-        fish.setMarqueed(Math.max(event.x, marquee.x) > fish.displayObject.x - fish.displayObject.width / 2 &&
-                         Math.max(event.y, marquee.y) > fish.displayObject.y - fish.displayObject.height / 2 &&
-                         Math.min(marquee.x, event.x) < fish.displayObject.x + fish.displayObject.width / 2 &&
-                         Math.min(marquee.y, event.y) < fish.displayObject.y + fish.displayObject.height / 2)
+        fish.setMarqueed(Math.max(mouseX, marquee.x) > fish.displayObject.x - fish.displayObject.width / 2 &&
+                         Math.max(mouseY, marquee.y) > fish.displayObject.y - fish.displayObject.height / 2 &&
+                         Math.min(marquee.x, mouseX) < fish.displayObject.x + fish.displayObject.width / 2 &&
+                         Math.min(marquee.y, mouseY) < fish.displayObject.y + fish.displayObject.height / 2)
     }
 }
 
 function onMouseUp(event) {
     if (event.button !== 0) return
 
-    if (event.x === marquee.position.x && event.y === marquee.position.y) {
-        onMouseMove(event)
-    }
+    updateMarquee()
 
-    let selectionCount = 0
-
-    selectionCenter.set()
+    selectionCount = 0
 
     for (const fish of fishes) {
+        if (fish.marqueed) {
+            selectionCount++
+        }
+
         fish.setSelected(fish.marqueed)
         fish.setMarqueed(false)
-
-        if (!fish.selected) continue
-
-        selectionCount++
-
-        selectionCenter.add(fish.displayObject.position, selectionCenter)
     }
-
-    selectionCenter.multiplyScalar(1 / selectionCount, selectionCenter)
 
     clearMarquee()
 }
@@ -128,3 +136,24 @@ function onKeyDown(event) {
 
     clearMarquee()
 }
+
+let previousTime = performance.now()
+
+function gameLoop() {
+    let currentTime = performance.now()
+    let delta = (currentTime - previousTime) / 1000
+
+    previousTime = currentTime
+
+    for (const fish of fishes) {
+        fish.update(delta)
+    }
+
+    if (!app.stage.interactiveChildren) {
+        updateMarquee()
+    }
+
+    requestAnimationFrame(gameLoop)
+}
+
+requestAnimationFrame(gameLoop)
