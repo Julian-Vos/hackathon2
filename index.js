@@ -6,10 +6,13 @@ const app = new PIXI.Application({
 })
 
 app.view.style.display = 'block'
+app.view.addEventListener('contextmenu', (event) => {
+    event.preventDefault()
+})
 
 document.body.appendChild(app.view)
 
-const objects = []
+const fishes = []
 
 for (let i = 0; i < 4; i++) {
     const fish = new Fish(60 + i * 120, 60 + i * 120)
@@ -19,25 +22,41 @@ for (let i = 0; i < 4; i++) {
 
     app.stage.addChild(fish.displayObject)
 
-    objects.push(fish)
+    fishes.push(fish)
 }
 
+const selectionCenter = new PIXI.Point()
 const marquee = new PIXI.Graphics()
 
 app.stage.addChild(marquee)
 
 document.addEventListener('mousedown', (event) => {
-    marquee.position.x = event.x
-    marquee.position.y = event.y
+    switch (event.button) {
+        case 0: {
+            marquee.position.set(event.x, event.y)
 
-    app.stage.interactiveChildren = false
+            app.stage.interactiveChildren = false
 
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
-    document.addEventListener('keydown', onKeyDown)
+            document.addEventListener('mousemove', onMouseMove)
+            document.addEventListener('mouseup', onMouseUp)
+            document.addEventListener('keydown', onKeyDown)
+        } break
+        case 2: {
+            for (const fish of fishes) {
+                if (fish.selected) {
+                    fish.movement.set(event.x - selectionCenter.x, event.y - selectionCenter.y)
+                    fish.displayObject.position.add(fish.movement, fish.displayObject.position) // temporary
+                }
+            }
+
+            selectionCenter.set(event.x, event.y)
+        }
+    }
 })
 
-function onMouseMove(event) {
+function onMouseMove(event) { // on marquee update, not just move
+    if (event.button !== 0) return
+
     marquee.clear()
     marquee.lineStyle(3).drawRect(
         Math.min(0, event.x - marquee.x),
@@ -46,28 +65,42 @@ function onMouseMove(event) {
         Math.abs(event.y - marquee.y)
     )
 
-    for (const object of objects) {
-        object.setMarqueed(object.displayObject.x - 50 < Math.max(event.x, marquee.x) &&
-                           object.displayObject.y - 50 < Math.max(event.y, marquee.y) &&
-                           object.displayObject.x + 50 > Math.min(marquee.x, event.x) &&
-                           object.displayObject.y + 50 > Math.min(marquee.y, event.y))
+    for (const fish of fishes) {
+        fish.setMarqueed(fish.displayObject.x - 50 < Math.max(event.x, marquee.x) &&
+                         fish.displayObject.y - 50 < Math.max(event.y, marquee.y) &&
+                         fish.displayObject.x + 50 > Math.min(marquee.x, event.x) &&
+                         fish.displayObject.y + 50 > Math.min(marquee.y, event.y))
     }
 }
 
 function onMouseUp(event) {
+    if (event.button !== 0) return
+
     if (event.x === marquee.position.x && event.y === marquee.position.y) {
         onMouseMove(event)
     }
 
-    for (const object of objects) {
-        object.setSelected(object.marqueed)
-        object.setMarqueed(false)
+    let selectionCount = 0
+
+    selectionCenter.set()
+
+    for (const fish of fishes) {
+        fish.setSelected(fish.marqueed)
+        fish.setMarqueed(false)
+
+        if (!fish.selected) continue
+
+        selectionCount++
+
+        selectionCenter.add(fish.displayObject.position, selectionCenter)
     }
 
-    hideMarquee()
+    selectionCenter.multiplyScalar(1 / selectionCount, selectionCenter)
+
+    clearMarquee()
 }
 
-function hideMarquee() {
+function clearMarquee() {
     marquee.clear()
 
     app.stage.interactiveChildren = true
@@ -78,11 +111,11 @@ function hideMarquee() {
 }
 
 function onKeyDown(event) {
-    if (event.key === 'Escape') {
-        for (const object of objects) {
-            object.setMarqueed(false)
-        }
+    if (event.key !== 'Escape') return
 
-        hideMarquee()
+    for (const fish of fishes) {
+        fish.setMarqueed(false)
     }
+
+    clearMarquee()
 }

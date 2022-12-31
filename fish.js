@@ -1,5 +1,7 @@
 class Fish {
     constructor(x, y) {
+        this.movement = new PIXI.Point()
+
         this.displayObject = new PIXI.Graphics()
         this.displayObject.beginFill(0xffffff).drawRect(-50, -50, 100, 100)
         this.displayObject.position.x = x
