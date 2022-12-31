@@ -1,21 +1,28 @@
+import Builder from './builder.js'
+import Gatherer from './gatherer.js'
+
 const app = new PIXI.Application({
     autoDensity: true,
-    backgroundColor: 0xd4f1f9,
     resizeTo: window,
     resolution: devicePixelRatio,
 })
 
 app.view.style.display = 'block'
+
 app.view.addEventListener('contextmenu', (event) => {
     event.preventDefault()
 })
 
-document.body.appendChild(app.view)
+const background = PIXI.Sprite.from('images/fishgamebackground.jpg')
+
+background.y = -500
+
+app.stage.addChild(background)
 
 const fishes = []
 
-for (let i = 0; i < 4; i++) {
-    const fish = new Fish(60 + i * 120, 60 + i * 120)
+for (let i = 0; i < 3; i++) {
+    const fish = new (i < 2 ? Gatherer : Builder)(60 + i * 120, 60 + i * 120)
 
     fish.displayObject.interactive = true
     fish.displayObject.cursor = 'pointer'
@@ -29,6 +36,8 @@ const selectionCenter = new PIXI.Point()
 const marquee = new PIXI.Graphics()
 
 app.stage.addChild(marquee)
+
+document.body.appendChild(app.view)
 
 document.addEventListener('mousedown', (event) => {
     switch (event.button) {

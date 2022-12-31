@@ -1,9 +1,8 @@
-class Fish {
-    constructor(x, y) {
+export default class Fish {
+    constructor(image, x, y) {
         this.movement = new PIXI.Point()
 
-        this.displayObject = new PIXI.Graphics()
-        this.displayObject.beginFill(0xffffff).drawRect(-50, -50, 100, 100)
+        this.displayObject = PIXI.Sprite.from(`images/${image}.png`)
         this.displayObject.position.x = x
         this.displayObject.position.y = y
 
@@ -26,6 +25,6 @@ class Fish {
     }
 
     updateTint() {
-        this.displayObject.tint = this.marqueed || this.selected ? 0x0000ff : 0xff0000
+        // this.displayObject.tint = this.marqueed || this.selected ? 0x0000ff : 0xff0000
     }
 }
