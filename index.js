@@ -1,11 +1,7 @@
 import Builder from './builder.js'
 import Gatherer from './gatherer.js'
 
-const app = new PIXI.Application({
-    autoDensity: true,
-    resizeTo: window,
-    resolution: devicePixelRatio,
-})
+const app = new PIXI.Application({ autoDensity: true, resizeTo: window, resolution: devicePixelRatio })
 
 app.view.style.display = 'block'
 
@@ -14,8 +10,6 @@ app.view.addEventListener('contextmenu', (event) => {
 })
 
 const background = PIXI.Sprite.from('images/fishgamebackground.jpg')
-
-background.y = -500
 
 app.stage.addChild(background)
 
@@ -33,8 +27,7 @@ for (let i = 0; i < 3; i++) {
 }
 
 const marquee = new PIXI.Graphics()
-let mouseX
-let mouseY
+let mousePosition = new PIXI.Point()
 let selectionCount
 
 app.stage.addChild(marquee)
@@ -44,18 +37,16 @@ document.body.appendChild(app.view)
 document.addEventListener('mousedown', (event) => {
     switch (event.button) {
         case 0: {
-            mouseX = event.x
-            mouseY = event.y
-
-            marquee.position.set(mouseX, mouseY)
+            mousePosition.set(event.x, event.y)
+            mousePosition.subtract(app.stage.position, marquee.position)
 
             app.stage.interactiveChildren = false
 
             document.addEventListener('mousemove', onMouseMove)
             document.addEventListener('mouseup', onMouseUp)
-            document.addEventListener('keydown', onKeyDown)
         } break
         case 2: {
+            const mouse = new PIXI.Point(event.x, event.y).subtract(app.stage.position)
             let selectionIndex = 0
 
             for (const fish of fishes) {
@@ -63,9 +54,9 @@ document.addEventListener('mousedown', (event) => {
 
                 const angle = 0.5 * Math.PI - 2 * Math.PI / selectionCount * selectionIndex++
 
-                fish.movement.set(
-                    event.x - fish.displayObject.x + Math.cos(angle) * (selectionCount - 1) * 30,
-                    event.y - fish.displayObject.y + Math.sin(angle) * (selectionCount - 1) * 30
+                mouse.subtract(fish.displayObject.position).add(
+                    new PIXI.Point(Math.cos(angle), Math.sin(angle)).multiplyScalar((selectionCount - 1) * 30),
+                    fish.movement
                 )
 
                 if (fish.movement.x !== 0) {
@@ -77,24 +68,25 @@ document.addEventListener('mousedown', (event) => {
 })
 
 function onMouseMove(event) {
-    mouseX = event.x
-    mouseY = event.y
+    mousePosition.set(event.x, event.y)
 }
 
 function updateMarquee() {
+    const mouse = mousePosition.subtract(app.stage.position)
+
     marquee.clear()
     marquee.lineStyle(3).drawRect(
-        Math.min(0, mouseX - marquee.x),
-        Math.min(0, mouseY - marquee.y),
-        Math.abs(mouseX - marquee.x),
-        Math.abs(mouseY - marquee.y)
+        Math.min(0, mouse.x - marquee.x),
+        Math.min(0, mouse.y - marquee.y),
+        Math.abs(mouse.x - marquee.x),
+        Math.abs(mouse.y - marquee.y)
     )
 
     for (const fish of fishes) {
-        fish.setMarqueed(Math.max(mouseX, marquee.x) > fish.displayObject.x - fish.displayObject.width / 2 &&
-                         Math.max(mouseY, marquee.y) > fish.displayObject.y - fish.displayObject.height / 2 &&
-                         Math.min(marquee.x, mouseX) < fish.displayObject.x + fish.displayObject.width / 2 &&
-                         Math.min(marquee.y, mouseY) < fish.displayObject.y + fish.displayObject.height / 2)
+        fish.setMarqueed(Math.max(mouse.x, marquee.x) > fish.displayObject.x - fish.displayObject.width / 2 &&
+                         Math.max(mouse.y, marquee.y) > fish.displayObject.y - fish.displayObject.height / 2 &&
+                         Math.min(marquee.x, mouse.x) < fish.displayObject.x + fish.displayObject.width / 2 &&
+                         Math.min(marquee.y, mouse.y) < fish.displayObject.y + fish.displayObject.height / 2)
     }
 }
 
@@ -124,19 +116,29 @@ function clearMarquee() {
 
     document.removeEventListener('mousemove', onMouseMove)
     document.removeEventListener('mouseup', onMouseUp)
-    document.removeEventListener('keydown', onKeyDown)
 }
 
-function onKeyDown(event) {
-    if (event.key !== 'Escape') return
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        if (app.stage.interactiveChildren) return
 
-    for (const fish of fishes) {
-        fish.setMarqueed(false)
+        for (const fish of fishes) {
+            fish.setMarqueed(false)
+        }
+
+        clearMarquee()
+    } else if (keyboard.hasOwnProperty(event.key) && !event.repeat) {
+        keyboard[event.key] = 1
     }
+})
 
-    clearMarquee()
-}
+document.addEventListener('keyup', (event) => {
+    if (keyboard.hasOwnProperty(event.key)) {
+        keyboard[event.key] = 0
+    }
+})
 
+let keyboard = { ArrowLeft: 0, ArrowUp: 0, ArrowRight: 0, ArrowDown: 0 }
 let previousTime = performance.now()
 
 function gameLoop() {
@@ -144,6 +146,13 @@ function gameLoop() {
     let delta = (currentTime - previousTime) / 1000
 
     previousTime = currentTime
+
+    app.stage.x = Math.max(Math.min(
+        app.stage.x - (keyboard.ArrowRight - keyboard.ArrowLeft) * delta * 250
+    , 0), app.view.width / devicePixelRatio - background.width)
+    app.stage.y = Math.max(Math.min(
+        app.stage.y - (keyboard.ArrowDown - keyboard.ArrowUp) * delta * 250
+    , 0), app.view.height / devicePixelRatio - background.height)
 
     for (const fish of fishes) {
         fish.update(delta)
