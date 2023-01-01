@@ -1,18 +1,25 @@
 export default class Selectable {
-    constructor(image, x, y) {
-        const url = `images/${image}.png`
-
+    constructor(images, x, y) {
         this.ring = new PIXI.Graphics()
 
-        PIXI.Assets.load(url).then((texture) => {
-            this.ring.lineStyle(2, 0x0, 0.5).drawEllipse(0, 0, texture.width * 0.6, texture.height * 0.6)
+        PIXI.Assets.load(`images/${images[0]}.png`).then((texture) => {
+            this.ring.lineStyle(2, 0xffffff, 0.5).drawEllipse(
+                0,
+                (0.5 - this.displayObject.anchor.y) * texture.height,
+                texture.width * 0.65,
+                texture.height * 0.65
+            )
 
             this.displayObject.addChild(this.ring)
-            this.displayObject.zIndex = y + texture.height / 2
+            this.displayObject.zIndex = y
         })
 
-        this.displayObject = PIXI.Sprite.from(url)
-        this.displayObject.anchor.set(0.5)
+        this.displayObject = images.length === 1
+            ? PIXI.Sprite.from(`images/${images[0]}.png`)
+            : PIXI.AnimatedSprite.fromImages(images.map((image) => {
+                  return `images/${image}.png`
+              }))
+
         this.displayObject.position.x = x
         this.displayObject.position.y = y
         this.displayObject.cursor = 'pointer'

@@ -5,6 +5,8 @@ export default class Resource extends Selectable {
     constructor(...args) {
         super(...args)
 
+        this.displayObject.anchor.set(0.5, 1)
+
         this.gatherers = 0
         this.unitsLeft = 10
     }

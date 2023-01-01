@@ -1,6 +1,11 @@
+import Angler from './angler.js'
 import Builder from './builder.js'
+import Coral from './coral.js'
 import Gatherer from './gatherer.js'
+import Plankton from './plankton.js'
+import Rocks from './rocks.js'
 import Seaweed from './seaweed.js'
+import Shells from './shells.js'
 
 const app = new PIXI.Application({ autoDensity: true, resizeTo: window, resolution: devicePixelRatio })
 
@@ -10,23 +15,27 @@ app.view.addEventListener('contextmenu', (event) => {
     event.preventDefault()
 })
 
-const background = PIXI.Sprite.from('images/fishgamebackground.jpg')
+const zoom = 4 / 3
 
-app.stage.addChild(background)
+app.stage.scale.set(1 / zoom)
+app.stage.x = (app.view.width / devicePixelRatio - 4096 / zoom) / 2
+app.stage.y = app.view.height / devicePixelRatio - 2048 / zoom
+app.stage.addChild(PIXI.Sprite.from('images/background.jpg'))
 
-const objects = new Set()
 const objectContainer = new PIXI.Container()
+const objects = new Set()
 let selectedObject = null
 
 objectContainer.sortableChildren = true
 
-for (let i = 0; i < 3; i++) {
-    const object = new Seaweed(500 + i * 50, 120 - i * 10)
+for (let i = 0; i < 5; i++) {
+    const object = new [Plankton, Seaweed, Rocks, Shells, Coral][i](
+        748 + Math.floor(Math.random() * 2600),
+        i === 0 ? 900 : (1150 + Math.floor(Math.random() * 850))
+    )
 
     object.displayObject.on('mousedown', (event) => {
         event.preventDefault()
-
-        object.setSelected(true)
 
         for (const fish of fishes) {
             fish.setSelected(false)
@@ -34,6 +43,8 @@ for (let i = 0; i < 3; i++) {
 
         selectedObject?.setSelected(false)
         selectedObject = object
+
+        object.setSelected(true)
     })
 
     object.displayObject.on('rightdown', (event) => {
@@ -47,7 +58,11 @@ for (let i = 0; i < 3; i++) {
             selectionCount--
         }
 
-        onMouseDown({ button: 2, x: object.displayObject.x, y: object.displayObject.y })
+        onMouseDown({
+            button: 2,
+            x: (app.stage.x + object.displayObject.x / zoom),
+            y: (app.stage.y + (object.displayObject.y - object.displayObject.height / 2) / zoom)
+        })
 
         for (const fish of fishes) {
             if (fish.selected) {
@@ -56,23 +71,26 @@ for (let i = 0; i < 3; i++) {
         }
     })
 
-    objects.add(object)
     objectContainer.addChild(object.displayObject)
+    objects.add(object)
 }
 
 app.stage.addChild(objectContainer)
 
-const fishes = new Set()
 const fishContainer = new PIXI.Container()
+const fishes = new Set()
 
 for (let i = 0; i < 3; i++) {
-    const fish = new (i < 2 ? Gatherer : Builder)(60 + i * 120, 60 + i * 120)
+    const fish = new ([Angler, Builder, Gatherer][i])(60 + i * 120, 60 + i * 120)
 
-    fishes.add(fish)
+    fish.displayObject.scale.set(zoom)
+
     fishContainer.addChild(fish.displayObject)
+    fishes.add(fish)
 }
 
 app.stage.addChild(fishContainer)
+app.stage.addChild(PIXI.Sprite.from('images/backgroundedges.png'))
 
 const marquee = new PIXI.Graphics()
 let mousePosition = new PIXI.Point()
@@ -88,7 +106,7 @@ function onMouseDown(event) {
     switch (event.button) {
         case 0: {
             mousePosition.set(event.x, event.y)
-            mousePosition.subtract(app.stage.position, marquee.position)
+            mousePosition.subtract(app.stage.position).multiplyScalar(zoom, marquee.position)
 
             app.stage.interactiveChildren = false
 
@@ -96,7 +114,7 @@ function onMouseDown(event) {
             document.addEventListener('mouseup', onMouseUp)
         } break
         case 2: {
-            const mouse = new PIXI.Point(event.x, event.y).subtract(app.stage.position)
+            const mouse = new PIXI.Point(event.x, event.y).subtract(app.stage.position).multiplyScalar(zoom)
             let selectionIndex = 0
 
             for (const fish of fishes) {
@@ -111,12 +129,12 @@ function onMouseDown(event) {
                 const angle = 0.5 * Math.PI - 2 * Math.PI / selectionCount * selectionIndex++
 
                 mouse.subtract(fish.displayObject.position).add(
-                    new PIXI.Point(Math.cos(angle), Math.sin(angle)).multiplyScalar((selectionCount - 1) * 30),
+                    new PIXI.Point(Math.cos(angle), Math.sin(angle)).multiplyScalar((selectionCount - 1) * 50),
                     fish.movement
                 )
 
                 if (fish.movement.x !== 0) {
-                    fish.displayObject.scale.x = Math.sign(fish.movement.x)
+                    fish.displayObject.scale.x = Math.sign(fish.movement.x) * zoom
                 }
             }
         }
@@ -128,7 +146,7 @@ function onMouseMove(event) {
 }
 
 function updateMarquee() {
-    const mouse = mousePosition.subtract(app.stage.position)
+    const mouse = mousePosition.subtract(app.stage.position).multiplyScalar(zoom)
 
     marquee.clear()
     marquee.lineStyle(3).drawRect(
@@ -197,7 +215,7 @@ document.addEventListener('keyup', (event) => {
     }
 })
 
-let keyboard = { ArrowLeft: 0, ArrowUp: 0, ArrowRight: 0, ArrowDown: 0 }
+let keyboard = { ArrowUp: 0, ArrowLeft: 0, ArrowDown: 0, ArrowRight: 0, w: 0, a: 0, s: 0, d: 0 }
 let previousTime = performance.now()
 
 function gameLoop() {
@@ -207,11 +225,11 @@ function gameLoop() {
     previousTime = currentTime
 
     app.stage.x = Math.max(Math.min(
-        app.stage.x - (keyboard.ArrowRight - keyboard.ArrowLeft) * delta * 250
-    , 0), app.view.width / devicePixelRatio - background.width)
+        app.stage.x - ((keyboard.ArrowRight || keyboard.d) - (keyboard.ArrowLeft || keyboard.a)) * delta * 250
+    , 0), app.view.width / devicePixelRatio - 4096 / zoom)
     app.stage.y = Math.max(Math.min(
-        app.stage.y - (keyboard.ArrowDown - keyboard.ArrowUp) * delta * 250
-    , 0), app.view.height / devicePixelRatio - background.height)
+        app.stage.y - ((keyboard.ArrowDown || keyboard.s) - (keyboard.ArrowUp || keyboard.w)) * delta * 250
+    , 0), app.view.height / devicePixelRatio - 2048 / zoom)
 
     for (const fish of fishes) {
         fish.update(delta)
@@ -224,8 +242,8 @@ function gameLoop() {
             selectedObject = null
         }
 
-        objects.delete(object)
         objectContainer.removeChild(object.displayObject)
+        objects.delete(object)
     }
 
     if (!app.stage.interactiveChildren) {
