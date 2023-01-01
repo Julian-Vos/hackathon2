@@ -18,9 +18,6 @@ const fishes = []
 for (let i = 0; i < 3; i++) {
     const fish = new (i < 2 ? Gatherer : Builder)(60 + i * 120, 60 + i * 120)
 
-    fish.displayObject.interactive = true
-    fish.displayObject.cursor = 'pointer'
-
     app.stage.addChild(fish.displayObject)
 
     fishes.push(fish)

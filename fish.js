@@ -1,32 +1,42 @@
 export default class Fish {
     constructor(image, x, y) {
         this.movement = new PIXI.Point()
+        this.ring = new PIXI.Graphics()
 
-        this.displayObject = PIXI.Sprite.from(`images/${image}.png`)
+        const url = `images/${image}.png`
+
+        PIXI.Assets.load(url).then((texture) => {
+            this.ring.lineStyle(2, 0x0, 0.5).drawEllipse(0, 0, texture.width * 0.6, texture.height * 0.6)
+            this.displayObject.addChild(this.ring)
+        })
+
+        this.displayObject = PIXI.Sprite.from(url)
+        this.displayObject.anchor.set(0.5)
         this.displayObject.position.x = x
         this.displayObject.position.y = y
-        this.displayObject.anchor.set(0.5)
+        this.displayObject.cursor = 'pointer'
+        this.displayObject.interactive = true
 
         this.marqueed = false
         this.selected = false
 
-        this.updateTint()
+        this.updateRing()
     }
 
     setMarqueed(value) {
         this.marqueed = value
 
-        this.updateTint()
+        this.updateRing()
     }
 
     setSelected(value) {
         this.selected = value
 
-        this.updateTint()
+        this.updateRing()
     }
 
-    updateTint() {
-        // this.displayObject.tint = this.marqueed || this.selected ? 0x0000ff : 0xff0000
+    updateRing() {
+        this.ring.visible = this.marqueed || this.selected
     }
 
     update(delta) {
