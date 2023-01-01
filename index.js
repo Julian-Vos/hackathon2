@@ -13,13 +13,35 @@ import Rocks from './resources/rocks.js'
 import Seaweed from './resources/seaweed.js'
 import Shells from './resources/shells.js'
 
-const app = new PIXI.Application({ autoDensity: true, resizeTo: window, resolution: devicePixelRatio })
+const app = new PIXI.Application({
+    autoDensity: true,
+    resizeTo: window,
+    resolution: devicePixelRatio,
+    view: document.querySelector('canvas'),
+})
 
 app.view.style.display = 'block'
 
 app.view.addEventListener('contextmenu', (event) => {
     event.preventDefault()
 })
+
+app.view.previousElementSibling.addEventListener('mousedown', (event) => {
+    event.currentTarget.remove()
+
+    const music = new Audio(`audio/hackathon2_final.mp3`)
+
+    music.loop = true
+    music.play()
+
+    previousTime = performance.now()
+
+    requestAnimationFrame(gameLoop)
+
+    app.stage.visible = true
+}, { once: true })
+
+app.stage.visible = false
 
 const zoom = 4 / 3
 
@@ -226,7 +248,7 @@ document.addEventListener('keyup', (event) => {
 })
 
 let keyboard = { ArrowUp: 0, ArrowLeft: 0, ArrowDown: 0, ArrowRight: 0, w: 0, a: 0, s: 0, d: 0 }
-let previousTime = performance.now()
+let previousTime
 
 function gameLoop() {
     let currentTime = performance.now()
@@ -262,8 +284,6 @@ function gameLoop() {
 
     requestAnimationFrame(gameLoop)
 }
-
-requestAnimationFrame(gameLoop)
 
 createObject(House, 2048, 1575)
 

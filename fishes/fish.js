@@ -19,7 +19,7 @@ export default class Fish extends Selectable {
     }
 
     update(delta) {
-        this.displayObject.alpha = Math.min(this.displayObject.alpha + delta * 1, 1)
+        this.displayObject.alpha = Math.min(this.displayObject.alpha + delta * 0.5, 1)
 
         if (this.movement.x === 0 && this.movement.y === 0) {
             this.displayObject.position.y -= Math.sin(this.phase) * 2
