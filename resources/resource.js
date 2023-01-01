@@ -1,5 +1,5 @@
-import { add } from '/resources.js'
-import Selectable from './selectable.js'
+import { add } from '../resources.js'
+import Selectable from '../selectable.js'
 
 export default class Resource extends Selectable {
     constructor(...args) {

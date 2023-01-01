@@ -1,10 +1,11 @@
-import Selectable from './selectable.js'
+import Selectable from '../selectable.js'
 
 export default class Fish extends Selectable {
     constructor(...args) {
         super(...args)
 
         this.displayObject.anchor.set(0.5)
+        this.displayObject.alpha = 0
 
         this.phase = 0
         this.movement = new PIXI.Point()
@@ -18,6 +19,8 @@ export default class Fish extends Selectable {
     }
 
     update(delta) {
+        this.displayObject.alpha = Math.min(this.displayObject.alpha + delta * 1, 1)
+
         if (this.movement.x === 0 && this.movement.y === 0) {
             this.displayObject.position.y -= Math.sin(this.phase) * 2
             this.phase = (this.phase + delta * Math.PI) % (2 * Math.PI)

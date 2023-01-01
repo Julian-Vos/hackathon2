@@ -1,11 +1,17 @@
-import Angler from './angler.js'
-import Builder from './builder.js'
-import Coral from './coral.js'
-import Gatherer from './gatherer.js'
-import Plankton from './plankton.js'
-import Rocks from './rocks.js'
-import Seaweed from './seaweed.js'
-import Shells from './shells.js'
+import Angler from './fishes/angler.js'
+import Builder from './fishes/builder.js'
+import Coral from './resources/coral.js'
+import Farm from './buildings/farm.js'
+import Gatherer from './fishes/gatherer.js'
+import House from './buildings/house.js'
+import Mansion from './buildings/mansion.js'
+import Pit from './buildings/pit.js'
+import Plankton from './resources/plankton.js'
+import Resource from './resources/resource.js'
+import Restaurant from './buildings/restaurant.js'
+import Rocks from './resources/rocks.js'
+import Seaweed from './resources/seaweed.js'
+import Shells from './resources/shells.js'
 
 const app = new PIXI.Application({ autoDensity: true, resizeTo: window, resolution: devicePixelRatio })
 
@@ -28,11 +34,8 @@ let selectedObject = null
 
 objectContainer.sortableChildren = true
 
-for (let i = 0; i < 5; i++) {
-    const object = new [Plankton, Seaweed, Rocks, Shells, Coral][i](
-        748 + Math.floor(Math.random() * 2600),
-        i === 0 ? 900 : (1150 + Math.floor(Math.random() * 850))
-    )
+function createObject(constructor, x, y) {
+    const object = new constructor(x, y)
 
     object.displayObject.on('mousedown', (event) => {
         event.preventDefault()
@@ -47,29 +50,45 @@ for (let i = 0; i < 5; i++) {
         object.setSelected(true)
     })
 
-    object.displayObject.on('rightdown', (event) => {
-        event.preventDefault()
+    if (object instanceof Resource) {
+        object.displayObject.on('rightdown', (event) => {
+            event.preventDefault()
 
-        for (const fish of fishes) {
-            if (!fish.selected || fish instanceof Gatherer) continue
+            for (const fish of fishes) {
+                if (!fish.selected || fish instanceof Gatherer) continue
 
-            fish.setSelected(false)
+                fish.setSelected(false)
 
-            selectionCount--
-        }
-
-        onMouseDown({
-            button: 2,
-            x: (app.stage.x + object.displayObject.x / zoom),
-            y: (app.stage.y + (object.displayObject.y - object.displayObject.height / 2) / zoom)
-        })
-
-        for (const fish of fishes) {
-            if (fish.selected) {
-                fish.resource = object
+                selectionCount--
             }
+
+            onMouseDown({
+                button: 2,
+                x: (app.stage.x + object.displayObject.x / zoom),
+                y: (app.stage.y + (object.displayObject.y - object.displayObject.height / 2) / zoom)
+            })
+
+            for (const fish of fishes) {
+                if (fish.selected) {
+                    fish.resource = object
+                }
+            }
+        })
+    } else if (constructor === House) {
+        for (let i = 0; i < 3; i++) {
+            const angle = 0.5 * Math.PI - 2 * Math.PI / 3 * i
+
+            const fish = new (i === 0 ? Builder : Gatherer)(
+                x + Math.cos(angle) * (3 - 1) * 50,
+                y + Math.sin(angle) * (3 - 1) * 50 - 92.5
+            )
+
+            fish.displayObject.scale.set(zoom)
+
+            fishContainer.addChild(fish.displayObject)
+            fishes.add(fish)
         }
-    })
+    }
 
     objectContainer.addChild(object.displayObject)
     objects.add(object)
@@ -79,15 +98,6 @@ app.stage.addChild(objectContainer)
 
 const fishContainer = new PIXI.Container()
 const fishes = new Set()
-
-for (let i = 0; i < 3; i++) {
-    const fish = new ([Angler, Builder, Gatherer][i])(60 + i * 120, 60 + i * 120)
-
-    fish.displayObject.scale.set(zoom)
-
-    fishContainer.addChild(fish.displayObject)
-    fishes.add(fish)
-}
 
 app.stage.addChild(fishContainer)
 app.stage.addChild(PIXI.Sprite.from('images/backgroundedges.png'))
@@ -254,3 +264,13 @@ function gameLoop() {
 }
 
 requestAnimationFrame(gameLoop)
+
+createObject(House, 2048, 1575)
+
+for (let i = 0; i < 5; i++) {
+    createObject(
+        [Plankton, Seaweed, Rocks, Shells, Coral][i],
+        748 + Math.floor(Math.random() * 2600),
+        i === 0 ? 900 : (1150 + Math.floor(Math.random() * 850))
+    )
+}
