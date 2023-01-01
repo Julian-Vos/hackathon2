@@ -1,5 +1,6 @@
 import Builder from './builder.js'
 import Gatherer from './gatherer.js'
+import Seaweed from './seaweed.js'
 
 const app = new PIXI.Application({ autoDensity: true, resizeTo: window, resolution: devicePixelRatio })
 
@@ -13,25 +14,77 @@ const background = PIXI.Sprite.from('images/fishgamebackground.jpg')
 
 app.stage.addChild(background)
 
-const fishes = []
+const objects = new Set()
+const objectContainer = new PIXI.Container()
+let selectedObject = null
+
+objectContainer.sortableChildren = true
+
+for (let i = 0; i < 3; i++) {
+    const object = new Seaweed(500 + i * 50, 120 - i * 10)
+
+    object.displayObject.on('mousedown', (event) => {
+        event.preventDefault()
+
+        object.setSelected(true)
+
+        for (const fish of fishes) {
+            fish.setSelected(false)
+        }
+
+        selectedObject?.setSelected(false)
+        selectedObject = object
+    })
+
+    object.displayObject.on('rightdown', (event) => {
+        event.preventDefault()
+
+        for (const fish of fishes) {
+            if (!fish.selected || fish instanceof Gatherer) continue
+
+            fish.setSelected(false)
+
+            selectionCount--
+        }
+
+        onMouseDown({ button: 2, x: object.displayObject.x, y: object.displayObject.y })
+
+        for (const fish of fishes) {
+            if (fish.selected) {
+                fish.resource = object
+            }
+        }
+    })
+
+    objects.add(object)
+    objectContainer.addChild(object.displayObject)
+}
+
+app.stage.addChild(objectContainer)
+
+const fishes = new Set()
+const fishContainer = new PIXI.Container()
 
 for (let i = 0; i < 3; i++) {
     const fish = new (i < 2 ? Gatherer : Builder)(60 + i * 120, 60 + i * 120)
 
-    app.stage.addChild(fish.displayObject)
-
-    fishes.push(fish)
+    fishes.add(fish)
+    fishContainer.addChild(fish.displayObject)
 }
+
+app.stage.addChild(fishContainer)
 
 const marquee = new PIXI.Graphics()
 let mousePosition = new PIXI.Point()
-let selectionCount
+let selectionCount = 0
 
 app.stage.addChild(marquee)
 
 document.body.appendChild(app.view)
 
-document.addEventListener('mousedown', (event) => {
+document.addEventListener('mousedown', onMouseDown)
+
+function onMouseDown(event) {
     switch (event.button) {
         case 0: {
             mousePosition.set(event.x, event.y)
@@ -49,6 +102,12 @@ document.addEventListener('mousedown', (event) => {
             for (const fish of fishes) {
                 if (!fish.selected) continue
 
+                if (fish.movement.x === 0 && fish.movement.y === 0 && fish.resource !== null) {
+                    fish.resource.gatherers--
+                }
+
+                fish.resource = null
+
                 const angle = 0.5 * Math.PI - 2 * Math.PI / selectionCount * selectionIndex++
 
                 mouse.subtract(fish.displayObject.position).add(
@@ -62,7 +121,7 @@ document.addEventListener('mousedown', (event) => {
             }
         }
     }
-})
+}
 
 function onMouseMove(event) {
     mousePosition.set(event.x, event.y)
@@ -91,6 +150,9 @@ function onMouseUp(event) {
     if (event.button !== 0) return
 
     updateMarquee()
+
+    selectedObject?.setSelected(false)
+    selectedObject = null
 
     selectionCount = 0
 
@@ -153,6 +215,17 @@ function gameLoop() {
 
     for (const fish of fishes) {
         fish.update(delta)
+    }
+
+    for (const object of objects) {
+        if (object.update(delta)) continue
+
+        if (object === selectedObject) {
+            selectedObject = null
+        }
+
+        objects.delete(object)
+        objectContainer.removeChild(object.displayObject)
     }
 
     if (!app.stage.interactiveChildren) {
