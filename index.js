@@ -79,7 +79,8 @@ function createObject(constructor, x, y) {
             for (const fish of fishes) {
                 if (!fish.selected || fish instanceof Gatherer) continue
 
-                fish.setSelected(false)
+                fish.wasSelected = true
+                fish.selected = false
 
                 selectionCount--
             }
@@ -87,13 +88,36 @@ function createObject(constructor, x, y) {
             onMouseDown({
                 button: 2,
                 x: (app.stage.x + object.displayObject.x / zoom),
-                y: (app.stage.y + (object.displayObject.y - object.displayObject.height / 2) / zoom)
+                y: (app.stage.y + (object.displayObject.y - object.displayObject.height / 2) / zoom),
             })
 
             for (const fish of fishes) {
                 if (fish.selected) {
                     fish.resource = object
+
+                    fish.wasSelected = true
+                    fish.selected = false
+
+                    selectionCount--
+                } else if (fish.wasSelected) {
+                    delete fish.wasSelected
+
+                    fish.selected = true
+
+                    selectionCount++
                 }
+            }
+
+            onMouseDown({ button: 2, x: event.x, y: event.y })
+
+            for (const fish of fishes) {
+                if (!fish.wasSelected) continue
+
+                delete fish.wasSelected
+
+                fish.selected = true
+
+                selectionCount++
             }
         })
     } else if (constructor === House) {
