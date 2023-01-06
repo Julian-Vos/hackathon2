@@ -3,7 +3,7 @@ export default class Selectable {
         this.ring = new PIXI.Graphics()
 
         PIXI.Assets.load(`images/${images[0]}.png`).then((texture) => {
-            this.ring.lineStyle(2, 0xffffff, 0.5).drawEllipse(
+            this.ring.lineStyle(2, 0xffffff, 0.75).drawEllipse(
                 0,
                 (0.5 - this.displayObject.anchor.y) * texture.height,
                 texture.width * 0.65,

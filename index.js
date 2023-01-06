@@ -205,7 +205,7 @@ function updateMarquee() {
     const mouse = mousePosition.subtract(app.stage.position).multiplyScalar(zoom)
 
     marquee.clear()
-    marquee.lineStyle(3).drawRect(
+    marquee.lineStyle(3, 0xffffff, 0.75).drawRect(
         Math.min(0, mouse.x - marquee.x),
         Math.min(0, mouse.y - marquee.y),
         Math.abs(mouse.x - marquee.x),
