@@ -46,8 +46,8 @@ app.stage.visible = false
 const zoom = 4 / 3
 
 app.stage.scale.set(1 / zoom)
-app.stage.x = (app.view.width / devicePixelRatio - 4096 / zoom) / 2
-app.stage.y = app.view.height / devicePixelRatio - 2048 / zoom
+app.stage.x = app.view.width / app.renderer.resolution / 2 - 2048 / zoom
+app.stage.y = app.view.height / app.renderer.resolution / 2 - (1383 - 185 / 2) / zoom
 app.stage.addChild(PIXI.Sprite.from('images/background.jpg'))
 
 const objectContainer = new PIXI.Container()
@@ -282,10 +282,10 @@ function gameLoop() {
 
     app.stage.x = Math.max(Math.min(
         app.stage.x - ((keyboard.ArrowRight || keyboard.d) - (keyboard.ArrowLeft || keyboard.a)) * delta * 250
-    , 0), app.view.width / devicePixelRatio - 4096 / zoom)
+    , 0), app.view.width / app.renderer.resolution - 4096 / zoom)
     app.stage.y = Math.max(Math.min(
         app.stage.y - ((keyboard.ArrowDown || keyboard.s) - (keyboard.ArrowUp || keyboard.w)) * delta * 250
-    , 0), app.view.height / devicePixelRatio - 2048 / zoom)
+    , 0), app.view.height / app.renderer.resolution - 2048 / zoom)
 
     for (const fish of fishes) {
         fish.update(delta)
@@ -309,12 +309,12 @@ function gameLoop() {
     requestAnimationFrame(gameLoop)
 }
 
-createObject(House, 2048, 1575)
+createObject(House, 2048, 1383)
 
 for (let i = 0; i < 5; i++) {
     createObject(
         [Plankton, Seaweed, Rocks, Shells, Coral][i],
-        748 + Math.floor(Math.random() * 2600),
-        i === 0 ? 900 : (1150 + Math.floor(Math.random() * 850))
+        736 + Math.floor(Math.random() * 2624),
+        i === 0 ? 900 : (1159 + Math.floor(Math.random() * 832))
     )
 }
