@@ -11,7 +11,7 @@ export default class Selectable {
             )
 
             this.displayObject.addChild(this.ring)
-            this.displayObject.zIndex = y
+            this.displayObject.zIndex = y + (1 - this.displayObject.anchor.y) * texture.height
         })
 
         this.displayObject = images.length === 1

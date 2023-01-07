@@ -17,7 +17,7 @@ const app = new PIXI.Application({
     autoDensity: true,
     resizeTo: window,
     resolution: devicePixelRatio,
-    view: document.querySelector('canvas'),
+    view: document.getElementsByTagName('canvas')[0],
 })
 
 app.view.style.display = 'block'
@@ -27,9 +27,12 @@ app.view.addEventListener('contextmenu', (event) => {
 })
 
 app.view.previousElementSibling.addEventListener('mousedown', (event) => {
+    event.stopPropagation()
     event.currentTarget.remove()
 
-    const music = new Audio(`audio/hackathon2_final.mp3`)
+    mousePosition.set(event.x, event.y)
+
+    const music = new Audio('audio/hackathon2_final.mp3')
 
     music.loop = true
     music.play()
@@ -47,20 +50,31 @@ const zoom = 4 / 3
 
 app.stage.scale.set(1 / zoom)
 app.stage.x = app.view.width / app.renderer.resolution / 2 - 2048 / zoom
-app.stage.y = app.view.height / app.renderer.resolution / 2 - (1383 - 185 / 2) / zoom
+app.stage.y = app.view.height / app.renderer.resolution / 2 - 1383 / zoom
 app.stage.addChild(PIXI.Sprite.from('images/background.jpg'))
 
 const objectContainer = new PIXI.Container()
 const objects = new Set()
+let objectClicked = false
 let selectedObject = null
 
 objectContainer.sortableChildren = true
 
+app.stage.addChild(objectContainer)
+
 function createObject(constructor, x, y) {
     const object = new constructor(x, y)
 
+    objectContainer.addChild(object.displayObject)
+
+    return object
+}
+
+function initializeObject(object) {
+    objects.add(object)
+
     object.displayObject.on('mousedown', (event) => {
-        event.preventDefault()
+        objectClicked = true
 
         for (const fish of fishes) {
             fish.setSelected(false)
@@ -77,7 +91,7 @@ function createObject(constructor, x, y) {
             event.preventDefault()
 
             for (const fish of fishes) {
-                if (!fish.selected || fish instanceof Gatherer) continue
+                if (!fish.selected || fish.constructor === Gatherer) continue
 
                 fish.wasSelected = true
                 fish.selected = false
@@ -87,8 +101,8 @@ function createObject(constructor, x, y) {
 
             onMouseDown({
                 button: 2,
-                x: (app.stage.x + object.displayObject.x / zoom),
-                y: (app.stage.y + (object.displayObject.y - object.displayObject.height / 2) / zoom),
+                x: app.stage.x + object.displayObject.x / zoom,
+                y: app.stage.y + (object.displayObject.y - object.displayObject.height / 2) / zoom,
             })
 
             for (const fish of fishes) {
@@ -120,13 +134,14 @@ function createObject(constructor, x, y) {
                 selectionCount++
             }
         })
-    } else if (constructor === House) {
+    } else if (object.constructor === House) {
         for (let i = 0; i < 3; i++) {
             const angle = 0.5 * Math.PI - 2 * Math.PI / 3 * i
+            const distance = Math.pow((3 - 1), 0.75) * 50
 
             const fish = new (i === 0 ? Builder : Gatherer)(
-                x + Math.cos(angle) * (3 - 1) * 50,
-                y + Math.sin(angle) * (3 - 1) * 50 - 92.5
+                object.displayObject.x + Math.cos(angle) * distance,
+                object.displayObject.y + Math.sin(angle) * distance
             )
 
             fish.displayObject.scale.set(zoom)
@@ -134,13 +149,15 @@ function createObject(constructor, x, y) {
             fishContainer.addChild(fish.displayObject)
             fishes.add(fish)
         }
+    } else if (object.constructor === Mansion) {
+        const fish = new Angler(object.displayObject.x, object.displayObject.y)
+
+        fish.displayObject.scale.set(zoom)
+
+        fishContainer.addChild(fish.displayObject)
+        fishes.add(fish)
     }
-
-    objectContainer.addChild(object.displayObject)
-    objects.add(object)
 }
-
-app.stage.addChild(objectContainer)
 
 const fishContainer = new PIXI.Container()
 const fishes = new Set()
@@ -148,26 +165,40 @@ const fishes = new Set()
 app.stage.addChild(fishContainer)
 app.stage.addChild(PIXI.Sprite.from('images/backgroundedges.png'))
 
-const marquee = new PIXI.Graphics()
+document.body.appendChild(app.view)
+
 let mousePosition = new PIXI.Point()
 let selectionCount = 0
-
-app.stage.addChild(marquee)
-
-document.body.appendChild(app.view)
+let marquee = null
+let placement = null
 
 document.addEventListener('mousedown', onMouseDown)
 
 function onMouseDown(event) {
     switch (event.button) {
         case 0: {
-            mousePosition.set(event.x, event.y)
-            mousePosition.subtract(app.stage.position).multiplyScalar(zoom, marquee.position)
+            if (placement === null) {
+                marquee = new PIXI.Graphics()
 
-            app.stage.interactiveChildren = false
+                mousePosition.subtract(app.stage.position).multiplyScalar(zoom, marquee.position)
 
-            document.addEventListener('mousemove', onMouseMove)
-            document.addEventListener('mouseup', onMouseUp)
+                app.stage.addChild(marquee)
+                app.stage.interactiveChildren = false
+
+                document.addEventListener('mouseup', onMouseUp)
+            } else {
+                if (placement.valid) {
+                    placement.updateGrid()
+
+                    initializeObject(placement)
+                } else {
+                    placement.displayObject.removeFromParent()
+                }
+
+                placement = null
+
+                app.stage.interactiveChildren = true
+            }
         } break
         case 2: {
             const mouse = new PIXI.Point(event.x, event.y).subtract(app.stage.position).multiplyScalar(zoom)
@@ -183,11 +214,12 @@ function onMouseDown(event) {
                 fish.resource = null
 
                 const angle = 0.5 * Math.PI - 2 * Math.PI / selectionCount * selectionIndex++
+                const distance = Math.pow((selectionCount - 1), 0.75) * 50
 
-                mouse.subtract(fish.displayObject.position).add(
-                    new PIXI.Point(Math.cos(angle), Math.sin(angle)).multiplyScalar((selectionCount - 1) * 50),
-                    fish.movement
-                )
+                new PIXI.Point(
+                    Math.min(Math.max(mouse.x + Math.cos(angle) * distance, 0), 4096),
+                    Math.min(Math.max(mouse.y + Math.sin(angle) * distance, 0), 2048)
+                ).subtract(fish.displayObject.position, fish.movement)
 
                 if (fish.movement.x !== 0) {
                     fish.displayObject.scale.x = Math.sign(fish.movement.x) * zoom
@@ -197,9 +229,9 @@ function onMouseDown(event) {
     }
 }
 
-function onMouseMove(event) {
+document.addEventListener('mousemove', (event) => {
     mousePosition.set(event.x, event.y)
-}
+})
 
 function updateMarquee() {
     const mouse = mousePosition.subtract(app.stage.position).multiplyScalar(zoom)
@@ -220,48 +252,71 @@ function updateMarquee() {
     }
 }
 
+function updatePlacement() {
+    placement.moveToward(mousePosition.subtract(app.stage.position).multiplyScalar(zoom))
+}
+
 function onMouseUp(event) {
     if (event.button !== 0) return
-
-    updateMarquee()
-
-    selectedObject?.setSelected(false)
-    selectedObject = null
 
     selectionCount = 0
 
     for (const fish of fishes) {
-        if (fish.marqueed) {
-            selectionCount++
-        }
-
         fish.setSelected(fish.marqueed)
         fish.setMarqueed(false)
+
+        if (fish.selected) {
+            selectionCount++
+        }
     }
 
-    clearMarquee()
+    if (selectionCount > 0 || !objectClicked) {
+        selectedObject?.setSelected(false)
+        selectedObject = null
+    }
+
+    objectClicked = false
+
+    removeMarquee()
 }
 
-function clearMarquee() {
-    marquee.clear()
+function removeMarquee() {
+    marquee.removeFromParent()
+    marquee = null
 
     app.stage.interactiveChildren = true
 
-    document.removeEventListener('mousemove', onMouseMove)
     document.removeEventListener('mouseup', onMouseUp)
+}
+
+function removePlacement() {
+    placement.displayObject.removeFromParent()
+    placement = null
+
+    app.stage.interactiveChildren = true
 }
 
 document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
-        if (app.stage.interactiveChildren) return
+        if (marquee !== null) {
+            for (const fish of fishes) {
+                fish.setMarqueed(false)
+            }
 
-        for (const fish of fishes) {
-            fish.setMarqueed(false)
+            removeMarquee()
+        } else if (placement !== null) {
+            removePlacement()
+        }
+    } else if (keyboard.hasOwnProperty(event.key) && !event.repeat) {
+        keyboard[event.key] = 1 / zoom
+    } else if (event.key >= '1' && event.key <= '5' && marquee === null) { // TEMPORARY
+        if (placement !== null) {
+            removePlacement()
         }
 
-        clearMarquee()
-    } else if (keyboard.hasOwnProperty(event.key) && !event.repeat) {
-        keyboard[event.key] = 1
+        placement = createObject([House, Mansion, Restaurant, Farm, Pit][event.key - 1])
+
+        app.stage.interactiveChildren = false
     }
 })
 
@@ -298,23 +353,30 @@ function gameLoop() {
             selectedObject = null
         }
 
-        objectContainer.removeChild(object.displayObject)
+        object.displayObject.removeFromParent()
         objects.delete(object)
     }
 
-    if (!app.stage.interactiveChildren) {
+    if (marquee !== null) {
         updateMarquee()
+    } else if (placement !== null) {
+        updatePlacement()
     }
 
     requestAnimationFrame(gameLoop)
 }
 
-createObject(House, 2048, 1383)
+const initialHouse = createObject(House)
+
+initialHouse.moveToward(new PIXI.Point(2048, 1383))
+initialHouse.updateGrid()
+
+initializeObject(initialHouse)
 
 for (let i = 0; i < 5; i++) {
-    createObject(
+    initializeObject(createObject(
         [Plankton, Seaweed, Rocks, Shells, Coral][i],
         736 + Math.floor(Math.random() * 2624),
-        i === 0 ? 900 : (1159 + Math.floor(Math.random() * 832))
-    )
+        i === 0 ? 950 : (1191 + Math.floor(Math.random() * 832))
+    ))
 }
