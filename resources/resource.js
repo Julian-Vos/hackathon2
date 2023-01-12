@@ -7,12 +7,12 @@ export default class Resource extends Selectable {
 
         this.displayObject.anchor.set(0.5, 1)
 
-        this.gatherers = 0
+        this.fishes = new Set()
         this.unitsLeft = 10
     }
 
     update(delta) {
-        const unitsGathered = Math.min(this.gatherers * delta * 0.2, this.unitsLeft)
+        const unitsGathered = Math.min(this.fishes.size * delta * 0.2, this.unitsLeft)
 
         add({ [this.constructor.name]: unitsGathered })
 

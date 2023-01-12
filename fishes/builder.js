@@ -10,6 +10,6 @@ export default class Builder extends Fish {
             'fishies/yellow1'
         ], ...args)
 
-        this.displayObject.animationSpeed = 24 / 60
+        this.animationSpeed = 24 / 60
     }
 }

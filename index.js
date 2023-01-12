@@ -73,7 +73,7 @@ function createObject(constructor, x, y) {
 function initializeObject(object) {
     objects.add(object)
 
-    object.displayObject.on('mousedown', (event) => {
+    object.displayObject.on('mousedown', () => {
         objectClicked = true
 
         for (const fish of fishes) {
@@ -86,76 +86,96 @@ function initializeObject(object) {
         object.setSelected(true)
     })
 
-    if (object instanceof Resource) {
-        object.displayObject.on('rightdown', (event) => {
-            event.preventDefault()
+    object.displayObject.on('rightdown', (event) => {
+        let constructor
 
-            for (const fish of fishes) {
-                if (!fish.selected || fish.constructor === Gatherer) continue
+        if (object instanceof Resource) {
+            constructor = Gatherer
+        } else if (object.displayObject.alpha < 1) {
+            constructor = Builder
+        } else {
+            return
+        }
+
+        event.preventDefault()
+
+        for (const fish of fishes) {
+            if (!fish.selected || fish.constructor === constructor) continue
+
+            fish.wasSelected = true
+            fish.selected = false
+
+            selectionCount--
+        }
+
+        const yOffset = (0.5 - object.displayObject.anchor.y) * object.displayObject.height
+
+        onMouseDown({
+            button: 2,
+            x: app.stage.x + object.displayObject.x / zoom,
+            y: app.stage.y + (object.displayObject.y + yOffset) / zoom,
+        })
+
+        for (const fish of fishes) {
+            if (fish.selected) {
+                fish.object = object
 
                 fish.wasSelected = true
                 fish.selected = false
 
                 selectionCount--
-            }
-
-            onMouseDown({
-                button: 2,
-                x: app.stage.x + object.displayObject.x / zoom,
-                y: app.stage.y + (object.displayObject.y - object.displayObject.height / 2) / zoom,
-            })
-
-            for (const fish of fishes) {
-                if (fish.selected) {
-                    fish.resource = object
-
-                    fish.wasSelected = true
-                    fish.selected = false
-
-                    selectionCount--
-                } else if (fish.wasSelected) {
-                    delete fish.wasSelected
-
-                    fish.selected = true
-
-                    selectionCount++
-                }
-            }
-
-            onMouseDown({ button: 2, x: event.x, y: event.y })
-
-            for (const fish of fishes) {
-                if (!fish.wasSelected) continue
-
+            } else if (fish.wasSelected) {
                 delete fish.wasSelected
 
                 fish.selected = true
 
                 selectionCount++
             }
-        })
-    } else if (object.constructor === House) {
-        for (let i = 0; i < 3; i++) {
-            const angle = 0.5 * Math.PI - 2 * Math.PI / 3 * i
-            const distance = Math.pow((3 - 1), 0.75) * 50
+        }
 
-            const fish = new (i === 0 ? Builder : Gatherer)(
-                object.displayObject.x + Math.cos(angle) * distance,
-                object.displayObject.y + Math.sin(angle) * distance
-            )
+        onMouseDown({ button: 2, x: event.x, y: event.y })
+
+        for (const fish of fishes) {
+            if (!fish.wasSelected) continue
+
+            delete fish.wasSelected
+
+            fish.selected = true
+
+            selectionCount++
+        }
+    })
+
+    if (object instanceof Resource) return
+
+    object.updateGrid()
+
+    if (object.constructor === House) {
+        object.builtCallback = () => {
+            for (let i = 0; i < 3; i++) {
+                const angle = 0.5 * Math.PI - 2 * Math.PI / 3 * i
+                const distance = Math.pow((3 - 1), 0.75) * 50
+
+                const fish = new (i === 0 ? Builder : Gatherer)(
+                    object.displayObject.x + Math.cos(angle) * distance,
+                    object.displayObject.y + Math.sin(angle) * distance
+                )
+
+                fish.displayObject.scale.set(zoom)
+
+                fishContainer.addChild(fish.displayObject)
+                fishes.add(fish)
+            }
+        }
+    } else if (object.constructor === Mansion) {
+        object.builtCallback = () => {
+            const fish = new Angler(object.displayObject.x, object.displayObject.y)
 
             fish.displayObject.scale.set(zoom)
 
             fishContainer.addChild(fish.displayObject)
             fishes.add(fish)
         }
-    } else if (object.constructor === Mansion) {
-        const fish = new Angler(object.displayObject.x, object.displayObject.y)
-
-        fish.displayObject.scale.set(zoom)
-
-        fishContainer.addChild(fish.displayObject)
-        fishes.add(fish)
     }
 }
 
@@ -188,9 +208,10 @@ function onMouseDown(event) {
                 document.addEventListener('mouseup', onMouseUp)
             } else {
                 if (placement.valid) {
-                    placement.updateGrid()
-
                     initializeObject(placement)
+
+                    placement.ring.alpha = 3.125
+                    placement.displayObject.alpha = 0.32
                 } else {
                     placement.displayObject.removeFromParent()
                 }
@@ -207,11 +228,11 @@ function onMouseDown(event) {
             for (const fish of fishes) {
                 if (!fish.selected) continue
 
-                if (fish.movement.x === 0 && fish.movement.y === 0 && fish.resource !== null) {
-                    fish.resource.gatherers--
+                if (fish.movement.x === 0 && fish.movement.y === 0 && fish.object !== null) {
+                    fish.object.fishes.delete(fish)
                 }
 
-                fish.resource = null
+                fish.object = null
 
                 const angle = 0.5 * Math.PI - 2 * Math.PI / selectionCount * selectionIndex++
                 const distance = Math.pow((selectionCount - 1), 0.75) * 50
@@ -366,13 +387,6 @@ function gameLoop() {
     requestAnimationFrame(gameLoop)
 }
 
-const initialHouse = createObject(House)
-
-initialHouse.moveToward(new PIXI.Point(2048, 1383))
-initialHouse.updateGrid()
-
-initializeObject(initialHouse)
-
 for (let i = 0; i < 5; i++) {
     initializeObject(createObject(
         [Plankton, Seaweed, Rocks, Shells, Coral][i],
@@ -380,3 +394,11 @@ for (let i = 0; i < 5; i++) {
         i === 0 ? 950 : (1191 + Math.floor(Math.random() * 832))
     ))
 }
+
+const initialHouse = createObject(House, 2048, 1383)
+
+initialHouse.moveToward(new PIXI.Point(2048, 1383))
+
+initializeObject(initialHouse)
+
+initialHouse.builtCallback()

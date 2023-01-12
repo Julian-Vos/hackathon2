@@ -7,6 +7,8 @@ export default class Building extends Selectable {
         super(...args)
 
         this.displayObject.anchor.set(0.5)
+
+        this.fishes = new Set()
     }
 
     moveToward(mouse) {
@@ -43,7 +45,27 @@ export default class Building extends Selectable {
         }
     }
 
-    update() {
+    update(delta) {
+        if (this.displayObject.alpha < 1) {
+            this.displayObject.alpha += this.fishes.size * delta * 0.05
+
+            if (this.displayObject.alpha >= 1) {
+                this.displayObject.alpha = 1
+
+                for (const fish of this.fishes) {
+                    fish.displayObject.gotoAndStop(0)
+
+                    fish.object = null
+                }
+
+                this.fishes.clear()
+
+                this.builtCallback?.()
+            }
+
+            this.ring.alpha = 1 / this.displayObject.alpha
+        }
+
         return true
     }
 }

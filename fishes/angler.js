@@ -10,6 +10,6 @@ export default class Angler extends Fish {
             'fishies/angler1'
         ], ...args)
 
-        this.displayObject.animationSpeed = 6 / 60
+        this.animationSpeed = 6 / 60
     }
 }

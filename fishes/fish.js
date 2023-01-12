@@ -9,7 +9,7 @@ export default class Fish extends Selectable {
 
         this.phase = 0
         this.movement = new PIXI.Point()
-        this.resource = null
+        this.object = null
     }
 
     setMarqueed(value) {
@@ -37,13 +37,20 @@ export default class Fish extends Selectable {
         this.movement.subtract(step, this.movement)
 
         if (this.movement.x === 0 && this.movement.y === 0) {
-            if (this.resource !== null) {
-                this.resource.gatherers++
+            if (this.object !== null) {
+                this.object.fishes.add(this)
+
+                if (this.object.displayObject.alpha < 1) {
+                    this.displayObject.animationSpeed = 6 / 60
+
+                    return
+                }
             }
 
             this.displayObject.gotoAndStop(0)
         } else {
             this.displayObject.play()
+            this.displayObject.animationSpeed = this.animationSpeed
         }
     }
 }
