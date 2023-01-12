@@ -50,7 +50,7 @@ const zoom = 4 / 3
 
 app.stage.scale.set(1 / zoom)
 app.stage.x = app.view.width / app.renderer.resolution / 2 - 2048 / zoom
-app.stage.y = app.view.height / app.renderer.resolution / 2 - 1383 / zoom
+app.stage.y = app.view.height / app.renderer.resolution / 2 - 1127 / zoom
 app.stage.addChild(PIXI.Sprite.from('images/background.jpg'))
 
 const objectContainer = new PIXI.Container()
@@ -395,9 +395,9 @@ for (let i = 0; i < 5; i++) {
     ))
 }
 
-const initialHouse = createObject(House, 2048, 1383)
+const initialHouse = createObject(House, 2048, 1127)
 
-initialHouse.moveToward(new PIXI.Point(2048, 1383))
+initialHouse.moveToward(new PIXI.Point(2048, 1127))
 
 initializeObject(initialHouse)
 
