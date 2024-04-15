@@ -13,20 +13,51 @@ import Rocks from './resources/rocks.js'
 import Seaweed from './resources/seaweed.js'
 import Shells from './resources/shells.js'
 
-const app = new PIXI.Application({
+await PIXI.Assets.load([
+    'images/fishies/angler1.png',
+    'images/fishies/angler2.png',
+    'images/fishies/angler3.png',
+    'images/fishies/blue1.png',
+    'images/fishies/blue2.png',
+    'images/fishies/blue3.png',
+    'images/fishies/yellow1.png',
+    'images/fishies/yellow2.png',
+    'images/fishies/yellow3.png',
+    'images/items/coral1.png',
+    'images/items/coral2.png',
+    'images/items/coral3.png',
+    'images/items/plankton.png',
+    'images/items/shell.png',
+    'images/items/stone1.png',
+    'images/items/stone2.png',
+    'images/items/weed.png',
+    'images/structures/bighouse.png',
+    'images/structures/feedingspot.png',
+    'images/structures/smallhouse.png',
+    'images/structures/stoneshellfarm.png',
+    'images/structures/weedfarm.png',
+    'images/background.jpg',
+    'images/backgroundedges.png',
+])
+
+const app = new PIXI.Application()
+
+await app.init({
     autoDensity: true,
     resizeTo: window,
     resolution: devicePixelRatio,
     view: document.getElementsByTagName('canvas')[0],
 })
 
-app.view.style.display = 'block'
+app.canvas.style.display = 'block'
 
-app.view.addEventListener('contextmenu', (event) => {
+app.canvas.addEventListener('contextmenu', (event) => {
     event.preventDefault()
 })
 
-app.view.previousElementSibling.addEventListener('mousedown', (event) => {
+app.canvas.previousElementSibling.textContent = 'Click to play!'
+
+app.canvas.previousElementSibling.addEventListener('click', (event) => {
     event.stopPropagation()
     event.currentTarget.remove()
 
@@ -40,17 +71,13 @@ app.view.previousElementSibling.addEventListener('mousedown', (event) => {
     previousTime = performance.now()
 
     requestAnimationFrame(gameLoop)
-
-    app.stage.visible = true
 }, { once: true })
-
-app.stage.visible = false
 
 const zoom = 4 / 3
 
 app.stage.scale.set(1 / zoom)
-app.stage.x = app.view.width / app.renderer.resolution / 2 - 2048 / zoom
-app.stage.y = app.view.height / app.renderer.resolution / 2 - 1127 / zoom
+app.stage.x = app.canvas.width / app.renderer.resolution / 2 - 2048 / zoom
+app.stage.y = app.canvas.height / app.renderer.resolution / 2 - 1127 / zoom
 app.stage.addChild(PIXI.Sprite.from('images/background.jpg'))
 
 const objectContainer = new PIXI.Container()
@@ -185,7 +212,7 @@ const fishes = new Set()
 app.stage.addChild(fishContainer)
 app.stage.addChild(PIXI.Sprite.from('images/backgroundedges.png'))
 
-document.body.appendChild(app.view)
+document.body.appendChild(app.canvas)
 
 let mousePosition = new PIXI.Point()
 let selectionCount = 0
@@ -258,12 +285,12 @@ function updateMarquee() {
     const mouse = mousePosition.subtract(app.stage.position).multiplyScalar(zoom)
 
     marquee.clear()
-    marquee.lineStyle(3, 0xffffff, 0.75).drawRect(
+    marquee.rect(
         Math.min(0, mouse.x - marquee.x),
         Math.min(0, mouse.y - marquee.y),
         Math.abs(mouse.x - marquee.x),
         Math.abs(mouse.y - marquee.y)
-    )
+    ).stroke({ width: 3, color: 0xffffff, alpha: 0.75 })
 
     for (const fish of fishes) {
         fish.setMarqueed(Math.max(mouse.x, marquee.x) > fish.displayObject.x - fish.displayObject.width / 2 &&
@@ -358,10 +385,10 @@ function gameLoop() {
 
     app.stage.x = Math.max(Math.min(
         app.stage.x - ((keyboard.ArrowRight || keyboard.d) - (keyboard.ArrowLeft || keyboard.a)) * delta * 250
-    , 0), app.view.width / app.renderer.resolution - 4096 / zoom)
+    , 0), app.canvas.width / app.renderer.resolution - 4096 / zoom)
     app.stage.y = Math.max(Math.min(
         app.stage.y - ((keyboard.ArrowDown || keyboard.s) - (keyboard.ArrowUp || keyboard.w)) * delta * 250
-    , 0), app.view.height / app.renderer.resolution - 2048 / zoom)
+    , 0), app.canvas.height / app.renderer.resolution - 2048 / zoom)
 
     for (const fish of fishes) {
         fish.update(delta)

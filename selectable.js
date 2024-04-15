@@ -3,12 +3,12 @@ export default class Selectable {
         this.ring = new PIXI.Graphics()
 
         PIXI.Assets.load(`images/${images[0]}.png`).then((texture) => {
-            this.ring.lineStyle(2, 0xffffff, 0.75).drawEllipse(
+            this.ring.ellipse(
                 0,
                 (0.5 - this.displayObject.anchor.y) * texture.height,
                 texture.width * 0.65,
                 texture.height * 0.65
-            )
+            ).stroke({ width: 2, color: '0xffffff', alpha: 0.75 })
 
             this.displayObject.addChild(this.ring)
             this.displayObject.zIndex = y + (1 - this.displayObject.anchor.y) * texture.height

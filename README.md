@@ -1,6 +1,6 @@
 # AquaRellen
 
-Welcome to our newest game! 
+Welcome to our newest game!
 
 ## About this game
 
