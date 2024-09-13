@@ -10,26 +10,215 @@
 
         <style>
             body {
+                font-family: Helvetica, Arial, sans-serif;
                 margin: 0;
-                position: relative;
             }
 
             button {
-                background-color: black;
-                border: none;
                 color: white;
                 cursor: pointer;
+            }
+
+            #instructions {
+                display: flex;
+                gap: 10px;
+                left: 20px;
+                position: absolute;
+                top: 20px;
+            }
+
+            #instructions > button {
+                background-color: #00000080;
+                border: 1px solid white;
+                border-radius: 20px;
+                font-size: 200%;
+                height: 40px;
+                padding: 0;
+                width: 40px;
+            }
+
+            #instructions > div {
+                background-color: #00000080;
+                border: 1px solid white;
+                border-radius: 20px;
+                color: white;
+                padding: 15px;
+            }
+
+            #resources {
+                background-color: #00000080;
+                border-radius: 20px;
+                color: white;
+                padding: 10px;
+                position: absolute;
+                right: 20px;
+                top: 20px;
+            }
+
+            #selection {
+                bottom: 20px;
+                left: 20px;
+                position: absolute;
+            }
+
+            #selection > div {
+                background-color: #00000080;
+                border-radius: 25px;
+                margin-top: 5px;
+            }
+
+            #selection > div > img {
+                border: 1px solid white;
+                border-radius: inherit;
+                object-fit: contain;
+                padding: 4px;
+                vertical-align: middle;
+            }
+
+            #selection > div > span {
+                color: white;
+                padding: 15px;
+                vertical-align: middle;
+            }
+
+            #build {
+                bottom: 20px;
+                position: absolute;
+                right: 20px;
+                text-align: right;
+            }
+
+            #build > div {
+                background-color: #00000080;
+                border: 1px solid white;
+                border-radius: 20px;
+                color: white;
+                margin-bottom: 5px;
+                padding: 15px;
+            }
+
+            #build > div > div {
+                text-align: left;
+            }
+
+            #build > span {
+                vertical-align: bottom;
+            }
+
+            #build > span > button {
+                background-color: #00000080;
+                border: 1px solid white;
+                border-radius: 30px;
+                padding: 4px;
+            }
+
+            #build > span > button > img {
+                object-fit: contain;
+                vertical-align: bottom;
+            }
+
+            #build > button {
+                background-color: #00000080;
+                border: 1px solid white;
+                border-radius: 30px;
+                font-size: 150%;
+                padding: 14.5px;
+            }
+
+            #loading {
+                background-color: black;
+                border: none;
                 font-size: 300%;
                 height: 100vh;
                 padding: 0;
                 position: absolute;
                 width: 100%;
             }
+
+            canvas {
+                display: block;
+            }
         </style>
     </head>
 
     <body>
-        <button>Loading...</button>
+        <div id='instructions'>
+            <button>
+                ?
+            </button>
+
+            <div hidden>
+                Create a thriving coral city!<br>
+                <br>
+                Left mouse button: select fishes / resources / buildings<br>
+                Right mouse button: send selected fishes to gather / build<br>
+                Arrow keys / WASD: look around<br>
+                M: (un)mute<br>
+                <br>
+                Made by Jessica, Jessie, Julian, Michel
+            </div>
+        </div>
+
+        <div id='resources'>
+          <span>0</span> seaweed |
+          <span>0</span> coral |
+          <span>0</span> rocks |
+          <span>0</span> shells |
+          <span>0</span> plankton
+        </div>
+
+        <div id='selection'>
+            <div hidden>
+                <img width='40' height='40'><span></span>
+            </div>
+
+            <div hidden>
+                <img width='40' height='40'><span></span>
+            </div>
+
+            <div hidden>
+                <img width='40' height='40'><span></span>
+            </div>
+        </div>
+
+        <div id='build'>
+            <div hidden>
+                <span></span>
+
+                <div></div>
+            </div>
+
+            <span hidden>
+                <button data-description='House: houses two gatherers and one builder'>
+                    <img width='50' height='50' src='images/structures/smallhouse.png'>
+                </button>
+
+                <button data-description='Mansion: houses one angler'>
+                    <img width='50' height='50' src='images/structures/bighouse.png'>
+                </button>
+
+                <button data-description='Farm: infinite supply of seaweed and coral'>
+                    <img width='50' height='50' src='images/structures/weedfarm.png'>
+                </button>
+
+                <button data-description='Pit: infinite supply of rocks and shells'>
+                    <img width='50' height='50' src='images/structures/stoneshellfarm.png'>
+                </button>
+
+                <button data-description='Restaurant: serves plankton to fish to increase their speed'>
+                    <img width='50' height='50' src='images/structures/feedingspot.png'>
+                </button>
+            </span>
+
+            <button>
+                BUILD
+            </button>
+        </div>
+
+        <button id='loading'>
+            Loading...
+        </button>
+
         <canvas></canvas>
     </body>
 </html>

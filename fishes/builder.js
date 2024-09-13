@@ -11,5 +11,7 @@ export default class Builder extends Fish {
         ], ...args)
 
         this.animationSpeed = 24 / 60
+
+        this.description = (count) => `Builder (${count})`
     }
 }

@@ -1,10 +1,10 @@
 import Building from './building.js'
 
 export default class House extends Building {
-    constructor(...args) {
-        super(['structures/smallhouse'], ...args)
+    static columns = 1.5
+    static rows = 1
 
-        this.gridWidth = 1.5
-        this.gridHeight = 1
+    constructor(...args) {
+        super('houses two gatherers and one builder', ['structures/smallhouse'], ...args)
     }
 }

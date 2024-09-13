@@ -1,10 +1,10 @@
 import Building from './building.js'
 
 export default class Restaurant extends Building {
-    constructor(...args) {
-        super(['structures/feedingspot'], ...args)
+    static columns = 4
+    static rows = 2
 
-        this.gridWidth = 4
-        this.gridHeight = 2
+    constructor(...args) {
+        super('serves plankton to fish to increase their speed', ['structures/feedingspot'], ...args)
     }
 }

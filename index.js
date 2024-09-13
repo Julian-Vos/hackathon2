@@ -1,17 +1,18 @@
-import Angler from './fishes/angler.js'
-import Builder from './fishes/builder.js'
-import Coral from './resources/coral.js'
 import Farm from './buildings/farm.js'
-import Gatherer from './fishes/gatherer.js'
 import House from './buildings/house.js'
 import Mansion from './buildings/mansion.js'
 import Pit from './buildings/pit.js'
+import Restaurant from './buildings/restaurant.js'
+import Angler from './fishes/angler.js'
+import Builder from './fishes/builder.js'
+import Gatherer from './fishes/gatherer.js'
+import Coral from './resources/coral.js'
 import Plankton from './resources/plankton.js'
 import Resource from './resources/resource.js'
-import Restaurant from './buildings/restaurant.js'
 import Rocks from './resources/rocks.js'
 import Seaweed from './resources/seaweed.js'
 import Shells from './resources/shells.js'
+import { setBuildCallback } from './ui.js'
 
 await PIXI.Assets.load([
     'images/fishies/angler1.png',
@@ -40,6 +41,7 @@ await PIXI.Assets.load([
     'images/backgroundedges.png',
 ])
 
+const music = new Audio('audio/hackathon2_final.mp3')
 const app = new PIXI.Application()
 
 await app.init({
@@ -49,22 +51,20 @@ await app.init({
     view: document.getElementsByTagName('canvas')[0],
 })
 
-app.canvas.style.display = 'block'
-
 app.canvas.addEventListener('contextmenu', (event) => {
     event.preventDefault()
 })
 
 app.canvas.previousElementSibling.textContent = 'Click to play!'
 
-app.canvas.previousElementSibling.addEventListener('click', (event) => {
+app.canvas.previousElementSibling.addEventListener('mousedown', (event) => {
     event.stopPropagation()
+
     event.currentTarget.remove()
 
     mousePosition.set(event.x, event.y)
 
-    const music = new Audio('audio/hackathon2_final.mp3')
-
+    music.volume = 0.5
     music.loop = true
     music.play()
 
@@ -233,15 +233,13 @@ function onMouseDown(event) {
                 app.stage.interactiveChildren = false
 
                 document.addEventListener('mouseup', onMouseUp)
-            } else {
-                if (placement.valid) {
-                    initializeObject(placement)
+            } else if (placement.valid) {
+                initializeObject(placement)
 
-                    placement.ring.alpha = 3.125
-                    placement.displayObject.alpha = 0.32
-                } else {
-                    placement.displayObject.removeFromParent()
-                }
+                placement.ring.alpha = 3.125
+                placement.displayObject.alpha = 0.32
+
+                delete placement.onCancel
 
                 placement = null
 
@@ -338,13 +336,27 @@ function removeMarquee() {
 }
 
 function removePlacement() {
+    placement.onCancel()
     placement.displayObject.removeFromParent()
     placement = null
 
     app.stage.interactiveChildren = true
 }
 
+setBuildCallback((index, onCancel) => {
+    if (placement !== null) {
+        removePlacement()
+    }
+
+    placement = createObject([House, Mansion, Farm, Pit, Restaurant][index])
+    placement.onCancel = onCancel
+
+    app.stage.interactiveChildren = false
+})
+
 document.addEventListener('keydown', (event) => {
+    if (event.repeat) return
+
     if (event.key === 'Escape') {
         if (marquee !== null) {
             for (const fish of fishes) {
@@ -355,16 +367,10 @@ document.addEventListener('keydown', (event) => {
         } else if (placement !== null) {
             removePlacement()
         }
-    } else if (keyboard.hasOwnProperty(event.key) && !event.repeat) {
+    } else if (event.key === 'm') {
+        music.volume = 0.5 - music.volume
+    } else if (keyboard.hasOwnProperty(event.key)) {
         keyboard[event.key] = 1 / zoom
-    } else if (event.key >= '1' && event.key <= '5' && marquee === null) { // TEMPORARY
-        if (placement !== null) {
-            removePlacement()
-        }
-
-        placement = createObject([House, Mansion, Restaurant, Farm, Pit][event.key - 1])
-
-        app.stage.interactiveChildren = false
     }
 })
 
@@ -384,10 +390,10 @@ function gameLoop() {
     previousTime = currentTime
 
     app.stage.x = Math.max(Math.min(
-        app.stage.x - ((keyboard.ArrowRight || keyboard.d) - (keyboard.ArrowLeft || keyboard.a)) * delta * 250
+        app.stage.x - ((keyboard.ArrowRight || keyboard.d) - (keyboard.ArrowLeft || keyboard.a)) * delta * 400
     , 0), app.canvas.width / app.renderer.resolution - 4096 / zoom)
     app.stage.y = Math.max(Math.min(
-        app.stage.y - ((keyboard.ArrowDown || keyboard.s) - (keyboard.ArrowUp || keyboard.w)) * delta * 250
+        app.stage.y - ((keyboard.ArrowDown || keyboard.s) - (keyboard.ArrowUp || keyboard.w)) * delta * 400
     , 0), app.canvas.height / app.renderer.resolution - 2048 / zoom)
 
     for (const fish of fishes) {
@@ -416,9 +422,9 @@ function gameLoop() {
 
 for (let i = 0; i < 5; i++) {
     initializeObject(createObject(
-        [Plankton, Seaweed, Rocks, Shells, Coral][i],
+        [Seaweed, Coral, Rocks, Shells, Plankton][i],
         736 + Math.floor(Math.random() * 2624),
-        i === 0 ? 950 : (1191 + Math.floor(Math.random() * 832))
+        i < 4 ? (1191 + Math.floor(Math.random() * 832)) : 950
     ))
 }
 

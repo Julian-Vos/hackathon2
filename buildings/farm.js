@@ -1,10 +1,10 @@
 import Building from './building.js'
 
 export default class Farm extends Building {
-    constructor(...args) {
-        super(['structures/weedfarm'], ...args)
+    static columns = 3
+    static rows = 2.5
 
-        this.gridWidth = 3
-        this.gridHeight = 2.5
+    constructor(...args) {
+        super('infinite supply of seaweed and coral', ['structures/weedfarm'], ...args)
     }
 }

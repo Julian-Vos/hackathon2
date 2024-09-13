@@ -11,5 +11,7 @@ export default class Gatherer extends Fish {
         ], ...args)
 
         this.animationSpeed = 6 / 60
+
+        this.description = (count) => `Gatherer (${count})`
     }
 }

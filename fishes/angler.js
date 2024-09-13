@@ -11,5 +11,7 @@ export default class Angler extends Fish {
         ], ...args)
 
         this.animationSpeed = 6 / 60
+
+        this.description = (count) => `Angler (${count}): lures new plankton to the city when fully gathered`
     }
 }

@@ -1,5 +1,5 @@
-import { add } from '../resources.js'
 import Selectable from '../selectable.js'
+import { addResources, removeSelected, setSelectedDescription } from '../ui.js'
 
 export default class Resource extends Selectable {
     constructor(...args) {
@@ -8,14 +8,30 @@ export default class Resource extends Selectable {
         this.displayObject.anchor.set(0.5, 1)
 
         this.fishes = new Set()
-        this.unitsLeft = 10
+        this.units = 10
+
+        this.description = () => `${this.constructor.name} (${Math.ceil(this.units)}/10)`
     }
 
     update(delta) {
-        const unitsGathered = Math.min(this.fishes.size * delta * 0.2, this.unitsLeft)
+        const previousUnits = this.units
 
-        add({ [this.constructor.name]: unitsGathered })
+        this.units = Math.max(this.units - this.fishes.size * delta * 0.2, 0)
 
-        return (this.unitsLeft -= unitsGathered) > 0
+        const ceiledUnits = Math.ceil(this.units)
+
+        if (ceiledUnits < previousUnits) {
+            addResources({ [this.constructor.name]: Math.ceil(previousUnits) - ceiledUnits })
+
+            if (this.selected) {
+                if (this.units > 0) {
+                    setSelectedDescription(this.portrait)
+                } else {
+                    removeSelected(this.portrait)
+                }
+            }
+        }
+
+        return this.units > 0
     }
 }

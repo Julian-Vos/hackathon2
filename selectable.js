@@ -1,8 +1,11 @@
+import { addSelected, removeSelected } from './ui.js'
+
 export default class Selectable {
     constructor(images, x, y) {
+        this.portrait = `images/${images[0]}.png`
         this.ring = new PIXI.Graphics()
 
-        PIXI.Assets.load(`images/${images[0]}.png`).then((texture) => {
+        PIXI.Assets.load(this.portrait).then((texture) => {
             this.ring.ellipse(
                 0,
                 (0.5 - this.displayObject.anchor.y) * texture.height,
@@ -32,7 +35,17 @@ export default class Selectable {
     }
 
     setSelected(value) {
+        if (value === this.selected) {
+            return
+        }
+
         this.selected = value
+
+        if (this.selected) {
+            addSelected(this.portrait, this.description)
+        } else {
+            removeSelected(this.portrait)
+        }
 
         this.updateRing()
     }
