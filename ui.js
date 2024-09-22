@@ -84,12 +84,13 @@ export function setSelectedDescription(portrait) {
 
 const buildElement = document.getElementById('build')
 const buildCosts = [
-    { Seaweed: 0, Coral: 0 },
-    { Seaweed: 0, Coral: 0 },
-    { Seaweed: 0, Coral: 0 },
-    { Seaweed: 0, Coral: 0 },
-    { Seaweed: 0, Coral: 0 },
+    { Seaweed: 5, Rocks: 10, Shells: 5 },
+    { Coral: 30 },
+    { Seaweed: 20, Rocks: 20 },
+    { Rocks: 15, Shells: 15 },
+    { Seaweed: 15, Shells: 15 },
 ]
+
 const buildCostsFormatted = buildCosts.map((costs) => {
     return Object.entries(costs).map(([resource, cost]) => `${cost} ${resource.toLowerCase()}`).join(' | ')
 })
@@ -117,7 +118,9 @@ for (let i = 0; i < buildElement.children[1].children.length; i++) {
         event.stopPropagation()
 
         if (removeResources(buildCosts[i])) {
-            buildCallback(i, () => addResources(buildCosts[i]))
+            buildCallback(i, () => {
+                addResources(buildCosts[i])
+            })
         }
     })
 

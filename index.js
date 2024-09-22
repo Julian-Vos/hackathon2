@@ -64,7 +64,7 @@ app.canvas.previousElementSibling.addEventListener('mousedown', (event) => {
 
     mousePosition.set(event.x, event.y)
 
-    music.volume = 0.5
+    music.volume = 0.25
     music.loop = true
     music.play()
 
@@ -114,20 +114,22 @@ function initializeObject(object) {
     })
 
     object.displayObject.on('rightdown', (event) => {
-        let constructor
+        let constructors
 
-        if (object instanceof Resource) {
-            constructor = Gatherer
-        } else if (object.displayObject.alpha < 1) {
-            constructor = Builder
-        } else {
+        if (object.displayObject.alpha < 1) {
+            constructors = [Builder]
+        } else if (object instanceof House || object instanceof Mansion) {
             return
+        } else if (object instanceof Restaurant) {
+            constructors = [Angler, Builder, Gatherer]
+        } else {
+            constructors = [Gatherer]
         }
 
         event.preventDefault()
 
         for (const fish of fishes) {
-            if (!fish.selected || fish.constructor === constructor) continue
+            if (constructors.includes(fish.constructor) || !fish.selected) continue
 
             fish.wasSelected = true
             fish.selected = false
@@ -202,6 +204,8 @@ function initializeObject(object) {
 
             fishContainer.addChild(fish.displayObject)
             fishes.add(fish)
+
+            planktonLurers++
         }
     }
 }
@@ -225,6 +229,10 @@ function onMouseDown(event) {
     switch (event.button) {
         case 0: {
             if (placement === null) {
+                if (marquee !== null) {
+                    removeMarquee()
+                }
+
                 marquee = new PIXI.Graphics()
 
                 mousePosition.subtract(app.stage.position).multiplyScalar(zoom, marquee.position)
@@ -236,7 +244,6 @@ function onMouseDown(event) {
             } else if (placement.valid) {
                 initializeObject(placement)
 
-                placement.ring.alpha = 3.125
                 placement.displayObject.alpha = 0.32
 
                 delete placement.onCancel
@@ -367,8 +374,14 @@ document.addEventListener('keydown', (event) => {
         } else if (placement !== null) {
             removePlacement()
         }
+    } else if (event.key === 'f') {
+        if (document.fullscreenElement === null) {
+            document.documentElement.requestFullscreen()
+        } else {
+            document.exitFullscreen()
+        }
     } else if (event.key === 'm') {
-        music.volume = 0.5 - music.volume
+        music.volume = 0.25 - music.volume
     } else if (keyboard.hasOwnProperty(event.key)) {
         keyboard[event.key] = 1 / zoom
     }
@@ -381,6 +394,8 @@ document.addEventListener('keyup', (event) => {
 })
 
 let keyboard = { ArrowUp: 0, ArrowLeft: 0, ArrowDown: 0, ArrowRight: 0, w: 0, a: 0, s: 0, d: 0 }
+let planktonLurers = 0
+let planktonLuring = 0
 let previousTime
 
 function gameLoop() {
@@ -409,6 +424,28 @@ function gameLoop() {
 
         object.displayObject.removeFromParent()
         objects.delete(object)
+
+        if (object instanceof Plankton) {
+            planktonLuring = 1
+        }
+    }
+
+    if (planktonLuring > 0) {
+        planktonLuring -= planktonLurers * delta * 0.01
+
+        if (planktonLuring <= 0) {
+            let anglerSumX = 0
+
+            for (const fish of fishes) {
+                if (fish instanceof Angler) {
+                    anglerSumX += fish.displayObject.x
+                }
+            }
+
+            const planktonX = Math.min(Math.max(anglerSumX / planktonLurers, 736), 736 + 2624)
+
+            initializeObject(createObject(Plankton, planktonX, 950))
+        }
     }
 
     if (marquee !== null) {
@@ -420,11 +457,11 @@ function gameLoop() {
     requestAnimationFrame(gameLoop)
 }
 
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < 8; i++) {
     initializeObject(createObject(
-        [Seaweed, Coral, Rocks, Shells, Plankton][i],
+        [Seaweed, Coral, Coral, Coral, Rocks, Rocks, Shells, Plankton][i],
         736 + Math.floor(Math.random() * 2624),
-        i < 4 ? (1191 + Math.floor(Math.random() * 832)) : 950
+        i < 7 ? (1191 + Math.floor(Math.random() * 832)) : 950
     ))
 }
 

@@ -1,7 +1,9 @@
 import Resource from './resource.js'
 
+let variant = 0
+
 export default class Rocks extends Resource {
     constructor(...args) {
-        super([`items/stone${1 + Math.floor(Math.random() * 2)}`], ...args)
+        super(50, [`items/stone${++variant}`], ...args)
     }
 }

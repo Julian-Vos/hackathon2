@@ -1,7 +1,9 @@
 import Resource from './resource.js'
 
+let variant = 0
+
 export default class Coral extends Resource {
     constructor(...args) {
-        super([`items/coral${1 + Math.floor(Math.random() * 3)}`], ...args)
+        super(10, [`items/coral${++variant}`], ...args)
     }
 }

@@ -5,16 +5,20 @@ const grid = Array.from({ length: 45 }, () => Array(15).fill(false))
 
 export default class Building extends Selectable {
     constructor(descriptionSuffix, ...args) {
-        super(...args)
-
-        this.displayObject.anchor.set(0.5)
+        super(...args, 0.5)
 
         this.fishes = new Set()
 
         this.description = () => {
-            return this.displayObject.alpha < 1
-                ? `${this.constructor.name} (under construction): ${descriptionSuffix}`
-                : `${this.constructor.name}: ${descriptionSuffix}`
+            let description = this.constructor.name
+
+            if (this.displayObject.alpha < 1) {
+                description += ' (under construction)'
+            } else if (this.constructor.hasOwnProperty('limit')) {
+                description += ` (${this.fishes.size}/${this.constructor.limit})`
+            }
+
+            return `${description}: ${descriptionSuffix}`
         }
     }
 
@@ -54,27 +58,28 @@ export default class Building extends Selectable {
 
     update(delta) {
         if (this.displayObject.alpha < 1) {
-            this.displayObject.alpha += this.fishes.size * delta * 0.05
+            this.displayObject.alpha += this.fishes.size * delta * 0.03
 
             if (this.displayObject.alpha >= 1) {
                 this.displayObject.alpha = 1
 
+                this.builtCallback?.()
+
                 for (const fish of this.fishes) {
                     fish.displayObject.gotoAndStop(0)
-
                     fish.object = null
                 }
 
                 this.fishes.clear()
-
-                this.builtCallback?.()
 
                 if (this.selected) {
                     setSelectedDescription(this.portrait)
                 }
             }
 
-            this.ring.alpha = 1 / this.displayObject.alpha
+            if (this.selected) {
+                this.ring.alpha = 1 / this.displayObject.alpha
+            }
         }
 
         return true
