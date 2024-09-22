@@ -15,6 +15,11 @@ import Shells from './resources/shells.js'
 import { setBuildCallback } from './ui.js'
 
 await PIXI.Assets.load([
+    'images/background/background.jpg',
+    'images/background/backgroundedges.png',
+    'images/background/beam1.png',
+    'images/background/beam2.png',
+    'images/background/beam3.png',
     'images/fishies/angler1.png',
     'images/fishies/angler2.png',
     'images/fishies/angler3.png',
@@ -37,8 +42,6 @@ await PIXI.Assets.load([
     'images/structures/smallhouse.png',
     'images/structures/stoneshellfarm.png',
     'images/structures/weedfarm.png',
-    'images/background.jpg',
-    'images/backgroundedges.png',
 ])
 
 const music = new Audio('audio/hackathon2_final.mp3')
@@ -74,11 +77,22 @@ app.canvas.previousElementSibling.addEventListener('mousedown', (event) => {
 }, { once: true })
 
 const zoom = 4 / 3
+const beams = []
+let beaming = 0
 
 app.stage.scale.set(1 / zoom)
 app.stage.x = app.canvas.width / app.renderer.resolution / 2 - 2048 / zoom
 app.stage.y = app.canvas.height / app.renderer.resolution / 2 - 1127 / zoom
-app.stage.addChild(PIXI.Sprite.from('images/background.jpg'))
+app.stage.addChild(PIXI.Sprite.from('images/background/background.jpg'))
+
+for (let i = 0; i < 3; i++) {
+    const beam = PIXI.Sprite.from(`images/background/beam${i + 1}.png`)
+
+    beam.visible = false
+    beams.push(beam)
+
+    app.stage.addChild(beam)
+}
 
 const objectContainer = new PIXI.Container()
 const objects = new Set()
@@ -214,7 +228,7 @@ const fishContainer = new PIXI.Container()
 const fishes = new Set()
 
 app.stage.addChild(fishContainer)
-app.stage.addChild(PIXI.Sprite.from('images/backgroundedges.png'))
+app.stage.addChild(PIXI.Sprite.from('images/background/backgroundedges.png'))
 
 document.body.appendChild(app.canvas)
 
@@ -380,6 +394,10 @@ document.addEventListener('keydown', (event) => {
         } else {
             document.exitFullscreen()
         }
+    } else if (event.key === 'b') {
+        for (const beam of beams) {
+            beam.visible = !beam.visible
+        }
     } else if (event.key === 'm') {
         music.volume = 0.25 - music.volume
     } else if (keyboard.hasOwnProperty(event.key)) {
@@ -410,6 +428,12 @@ function gameLoop() {
     app.stage.y = Math.max(Math.min(
         app.stage.y - ((keyboard.ArrowDown || keyboard.s) - (keyboard.ArrowUp || keyboard.w)) * delta * 400
     , 0), app.canvas.height / app.renderer.resolution - 2048 / zoom)
+
+    beaming = (beaming + delta * 0.2) % 1
+
+    beams[0].alpha = 1 - Math.abs(beaming - 1 / 3) * 3
+    beams[1].alpha = 1 - Math.abs(beaming - 2 / 3) * 3
+    beams[2].alpha = 1 - Math.abs(beaming - Math.round(beaming)) * 3
 
     for (const fish of fishes) {
         fish.update(delta)
